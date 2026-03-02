@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Registro de Eventos Ductos</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<h2>Registrar Evento</h2>
+
+<form id="formEvento">
+
+  <label>Tramo:</label>
+  <select id="tramo">
+    <option value="Tramo Norte">Tramo Norte</option>
+    <option value="Tramo Sur">Tramo Sur</option>
+    <option value="Tramo Centro">Tramo Centro</option>
+  </select>
+
+  <br><br>
+
+  <label>Tipo de Evento:</label>
+  <select id="tipo_evento">
+    <option value="Deslave">Deslave</option>
+    <option value="Poste">Poste</option>
+    <option value="Invasion">Invasión</option>
+  </select>
+
+  <br><br>
+
+  <label>Latitud:</label>
+  <input type="text" id="latitud" required>
+
+  <br><br>
+
+  <label>Longitud:</label>
+  <input type="text" id="longitud" required>
+
+  <br><br>
+
+  <label>Comentario:</label>
+  <textarea id="comentario"></textarea>
+
+  <br><br>
+
+  <label>Foto:</label>
+  <input type="file" id="foto" required>
+
+  <br><br>
+
+  <button type="submit">Guardar Evento</button>
+
+</form>
+
+<script>
+
+const SUPABASE_URL = "PEGA_AQUI_TU_URL";
+const SUPABASE_KEY = "PEGA_AQUI_TU_ANON_KEY";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+document.getElementById("formEvento").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const tramo = document.getElementById("tramo").value;
+  const tipo_evento = document.getElementById("tipo_evento").value;
+  const latitud = document.getElementById("latitud").value;
+  const longitud = document.getElementById("longitud").value;
+  const comentario = document.getElementById("comentario").value;
+  const foto = document.getElementById("foto").files[0];
+
+  const nombreArchivo = Date.now() + "_" + foto.name;
+
+  // Subir foto al bucket
+  const { error: errorUpload } = await supabase.storage
+    .from("fotos-eventos")
+    .upload(nombreArchivo, foto);
+
+  if (errorUpload) {
+    alert("Error subiendo imagen");
+    return;
+  }
+
+  // Obtener URL pública
+  const { data: publicUrlData } = supabase.storage
+    .from("fotos-eventos")
+    .getPublicUrl(nombreArchivo);
+
+  const foto_url = publicUrlData.publicUrl;
+
+  // Guardar en base de datos
+  const { error } = await supabase
+    .from("eventos")
+    .insert([
+      {
+        tramo,
+        tipo_evento,
+        latitud,
+        longitud,
+        comentario,
+        foto_url
+      }
+    ]);
+
+  if (error) {
+    alert("Error guardando evento");
+  } else {
+    alert("Evento guardado correctamente");
+    document.getElementById("formEvento").reset();
+  }
+
+});
+
+</script>
+
+</body>
+</html>
