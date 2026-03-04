@@ -1,116 +1,115 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Registro de Eventos Ductos</title>
+  <meta charset="UTF-8" />
+  <title>Registro de Eventos - Supabase</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<h2>Registrar Evento</h2>
+<h2>Registro de Evento</h2>
 
 <form id="formEvento">
 
-  <label>Tramo:</label>
-  <select id="tramo">
-    <option value="Tramo Norte">Tramo Norte</option>
-    <option value="Tramo Sur">Tramo Sur</option>
-    <option value="Tramo Centro">Tramo Centro</option>
-  </select>
+  <label for="tramo">Tramo:</label><br>
+  <select id="tramo"></select><br><br>
 
-  <br><br>
+  <label for="tipo_evento">Tipo de Evento:</label><br>
+  <select id="tipo_evento"></select><br><br>
 
-  <label>Tipo de Evento:</label>
-  <select id="tipo_evento">
-    <option value="Deslave">Deslave</option>
-    <option value="Poste">Poste</option>
-    <option value="Invasion">Invasión</option>
-  </select>
+  <label for="latitud">Latitud:</label><br>
+  <input type="text" id="latitud" required><br><br>
 
-  <br><br>
+  <label for="longitud">Longitud:</label><br>
+  <input type="text" id="longitud" required><br><br>
 
-  <label>Latitud:</label>
-  <input type="text" id="latitud" required>
+  <label for="comentario">Comentario:</label><br>
+  <textarea id="comentario"></textarea><br><br>
 
-  <br><br>
-
-  <label>Longitud:</label>
-  <input type="text" id="longitud" required>
-
-  <br><br>
-
-  <label>Comentario:</label>
-  <textarea id="comentario"></textarea>
-
-  <br><br>
-
-  <label>Foto:</label>
-  <input type="file" id="foto" required>
-
-  <br><br>
+  <label for="foto">Foto:</label><br>
+  <input type="file" id="foto" accept="image/*" required><br><br>
 
   <button type="submit">Guardar Evento</button>
 
 </form>
 
 <script>
+  // Aquí pegamos tus datos reales de Supabase
+  const SUPABASE_URL = "AQUÍ_VA_TU_URL_DE_SUPABASE";
+  const SUPABASE_KEY = "AQUÍ_VA_TU_ANON_KEY";
 
-const SUPABASE_URL = "PEGA_AQUI_TU_URL";
-const SUPABASE_KEY = "PEGA_AQUI_TU_ANON_KEY";
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  async function cargarListas() {
+    // Cargar tramos desde Supabase
+    const { data: tramos } = await supabase.from("tramos").select("id,nombre");
+    const selectTramo = document.getElementById("tramo");
+    tramos.forEach(t => {
+      selectTramo.innerHTML += `<option value="${t.id}">${t.nombre}</option>`;
+    });
 
-document.getElementById("formEvento").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const tramo = document.getElementById("tramo").value;
-  const tipo_evento = document.getElementById("tipo_evento").value;
-  const latitud = document.getElementById("latitud").value;
-  const longitud = document.getElementById("longitud").value;
-  const comentario = document.getElementById("comentario").value;
-  const foto = document.getElementById("foto").files[0];
-
-  const nombreArchivo = Date.now() + "_" + foto.name;
-
-  // Subir foto al bucket
-  const { error: errorUpload } = await supabase.storage
-    .from("fotos-eventos")
-    .upload(nombreArchivo, foto);
-
-  if (errorUpload) {
-    alert("Error subiendo imagen");
-    return;
+    // Cargar tipos de evento
+    const { data: tipos } = await supabase.from("tipo_evento").select("id,nombre");
+    const selectTipo = document.getElementById("tipo_evento");
+    tipos.forEach(t => {
+      selectTipo.innerHTML += `<option value="${t.id}">${t.nombre}</option>`;
+    });
   }
 
-  // Obtener URL pública
-  const { data: publicUrlData } = supabase.storage
-    .from("fotos-eventos")
-    .getPublicUrl(nombreArchivo);
+  document.getElementById("formEvento").addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  const foto_url = publicUrlData.publicUrl;
+    const tramoId = document.getElementById("tramo").value;
+    const tipoId = document.getElementById("tipo_evento").value;
+    const lat = document.getElementById("latitud").value;
+    const lng = document.getElementById("longitud").value;
+    const comentario = document.getElementById("comentario").value;
+    const fotoFile = document.getElementById("foto").files[0];
 
-  // Guardar en base de datos
-  const { error } = await supabase
-    .from("eventos")
-    .insert([
-      {
-        tramo,
-        tipo_evento,
-        latitud,
-        longitud,
-        comentario,
-        foto_url
-      }
-    ]);
+    // Subir foto al bucket de Supabase
+    const nombreArchivo = `${Date.now()}_${fotoFile.name}`;
 
-  if (error) {
-    alert("Error guardando evento");
-  } else {
-    alert("Evento guardado correctamente");
-    document.getElementById("formEvento").reset();
-  }
+    const { data: uploadData, error: uploadError } = await supabase
+      .storage
+      .from("fotos-eventos")
+      .upload(nombreArchivo, fotoFile);
 
-});
+    if (uploadError) {
+      alert("Error al subir la foto: " + uploadError.message);
+      return;
+    }
 
+    // Obtener URL pública
+    const { data: publicUrlData } = supabase
+      .storage
+      .from("fotos-eventos")
+      .getPublicUrl(nombreArchivo);
+
+    const foto_url = publicUrlData.publicUrl;
+
+    // Guardar registro en Supabase
+    const { error: insertError } = await supabase
+      .from("eventos")
+      .insert([
+        {
+          tramo_id: tramoId,
+          tipo_evento_id: tipoId,
+          latitud: lat,
+          longitud: lng,
+          comentario,
+          foto_url
+        }
+      ]);
+
+    if (insertError) {
+      alert("Error guardando evento: " + insertError.message);
+    } else {
+      alert("Evento guardado exitosamente 📌");
+      document.getElementById("formEvento").reset();
+    }
+  });
+
+  cargarListas();
 </script>
 
 </body>
