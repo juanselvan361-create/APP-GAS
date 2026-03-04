@@ -12,10 +12,10 @@
 <form id="formEvento">
 
   <label for="tramo">Tramo:</label><br>
-  <select id="tramo"></select><br><br>
+  <select id="tramo" required></select><br><br>
 
   <label for="tipo_evento">Tipo de Evento:</label><br>
-  <select id="tipo_evento"></select><br><br>
+  <select id="tipo_evento" required></select><br><br>
 
   <label for="latitud">Latitud:</label><br>
   <input type="text" id="latitud" required><br><br>
@@ -34,42 +34,65 @@
 </form>
 
 <script>
-  // Aquí pegamos tus datos reales de Supabase
+  // 🔹 Tus credenciales reales
   const SUPABASE_URL = "https://yecwroaomwrtndqtwjvl.supabase.co";
   const SUPABASE_KEY = "sb_publishable_ccG_ne0F5dU_J7qZKSgOhw_r0DLhRXk";
 
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { createClient } = supabase;
+  const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+  // 🔹 Cargar listas dinámicamente
   async function cargarListas() {
-    // Cargar tramos desde Supabase
-    const { data: tramos } = await supabase.from("tramos").select("id,nombre");
+
+    const { data: tramos, error: errorTramos } =
+      await supabaseClient.from("tramos").select("id,nombre");
+
+    if (errorTramos) {
+      console.error(errorTramos);
+      alert("Error cargando tramos");
+      return;
+    }
+
     const selectTramo = document.getElementById("tramo");
     tramos.forEach(t => {
       selectTramo.innerHTML += `<option value="${t.id}">${t.nombre}</option>`;
     });
 
-    // Cargar tipos de evento
-    const { data: tipos } = await supabase.from("tipo_evento").select("id,nombre");
+    const { data: tipos, error: errorTipos } =
+      await supabaseClient.from("tipo_evento").select("id,nombre");
+
+    if (errorTipos) {
+      console.error(errorTipos);
+      alert("Error cargando tipos de evento");
+      return;
+    }
+
     const selectTipo = document.getElementById("tipo_evento");
     tipos.forEach(t => {
       selectTipo.innerHTML += `<option value="${t.id}">${t.nombre}</option>`;
     });
   }
 
+  // 🔹 Guardar evento
   document.getElementById("formEvento").addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const tramoId = document.getElementById("tramo").value;
     const tipoId = document.getElementById("tipo_evento").value;
-    const lat = document.getElementById("latitud").value;
-    const lng = document.getElementById("longitud").value;
+    const lat = parseFloat(document.getElementById("latitud").value);
+    const lng = parseFloat(document.getElementById("longitud").value);
     const comentario = document.getElementById("comentario").value;
     const fotoFile = document.getElementById("foto").files[0];
 
-    // Subir foto al bucket de Supabase
+    if (!fotoFile) {
+      alert("Selecciona una imagen");
+      return;
+    }
+
     const nombreArchivo = `${Date.now()}_${fotoFile.name}`;
 
-    const { data: uploadData, error: uploadError } = await supabase
+    // 📸 Subir imagen
+    const { error: uploadError } = await supabaseClient
       .storage
       .from("fotos-eventos")
       .upload(nombreArchivo, fotoFile);
@@ -79,16 +102,16 @@
       return;
     }
 
-    // Obtener URL pública
-    const { data: publicUrlData } = supabase
+    // 🔗 Obtener URL pública
+    const { data: publicUrlData } = supabaseClient
       .storage
       .from("fotos-eventos")
       .getPublicUrl(nombreArchivo);
 
     const foto_url = publicUrlData.publicUrl;
 
-    // Guardar registro en Supabase
-    const { error: insertError } = await supabase
+    // 🗄 Guardar registro
+    const { error: insertError } = await supabaseClient
       .from("eventos")
       .insert([
         {
@@ -107,6 +130,7 @@
       alert("Evento guardado exitosamente 📌");
       document.getElementById("formEvento").reset();
     }
+
   });
 
   cargarListas();
