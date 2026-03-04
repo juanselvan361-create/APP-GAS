@@ -11,73 +11,66 @@
 
 <form id="formEvento">
 
-  <label for="tramo">Tramo:</label><br>
-  <select id="tramo" required></select><br><br>
+  <label>Tramo:</label><br>
+  <select id="tramo" required>
+    <option value="">Seleccione un tramo</option>
+  </select><br><br>
 
-  <label for="tipo_evento">Tipo de Evento:</label><br>
-  <select id="tipo_evento" required></select><br><br>
+  <label>Tipo de Evento:</label><br>
+  <select id="tipo_evento" required>
+    <option value="">Seleccione tipo de evento</option>
+  </select><br><br>
 
-  <label for="latitud">Latitud:</label><br>
-  <input type="text" id="latitud" required><br><br>
+  <label>Latitud:</label><br>
+  <input type="number" step="any" id="latitud" required><br><br>
 
-  <label for="longitud">Longitud:</label><br>
-  <input type="text" id="longitud" required><br><br>
+  <label>Longitud:</label><br>
+  <input type="number" step="any" id="longitud" required><br><br>
 
-  <label for="comentario">Comentario:</label><br>
+  <label>Comentario:</label><br>
   <textarea id="comentario"></textarea><br><br>
 
-  <label for="foto">Foto:</label><br>
+  <label>Foto:</label><br>
   <input type="file" id="foto" accept="image/*" required><br><br>
 
-  <button type="submit">Guardar Evento</button>
+  <button type="button" id="btnGuardar">Guardar Evento</button>
 
 </form>
+
 <script>
-  console.log("Script cargado");
-</script>
-<script>
-  // 🔹 Tus credenciales reales
+
   const SUPABASE_URL = "https://yecwroaomwrtndqtwjvl.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_ccG_ne0F5dU_J7qZKSgOhw_r0DLhRXk";
+  const SUPABASE_KEY = "TU_PUBLIC_KEY_AQUI"; // <-- pon tu key real
 
   const { createClient } = supabase;
   const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // 🔹 Cargar listas dinámicamente
+  // 🔹 Cargar listas
   async function cargarListas() {
 
-    const { data: tramos, error: errorTramos } =
+    const selectTramo = document.getElementById("tramo");
+    const selectTipo = document.getElementById("tipo_evento");
+
+    selectTramo.innerHTML = '<option value="">Seleccione un tramo</option>';
+    selectTipo.innerHTML = '<option value="">Seleccione tipo de evento</option>';
+
+    const { data: tramos } =
       await supabaseClient.from("tramos").select("id,nombre");
 
-    if (errorTramos) {
-      console.error(errorTramos);
-      alert("Error cargando tramos");
-      return;
-    }
-
-    const selectTramo = document.getElementById("tramo");
     tramos.forEach(t => {
       selectTramo.innerHTML += `<option value="${t.id}">${t.nombre}</option>`;
     });
 
-    const { data: tipos, error: errorTipos } =
+    const { data: tipos } =
       await supabaseClient.from("tipo_evento").select("id,nombre");
 
-    if (errorTipos) {
-      console.error(errorTipos);
-      alert("Error cargando tipos de evento");
-      return;
-    }
-
-    const selectTipo = document.getElementById("tipo_evento");
     tipos.forEach(t => {
       selectTipo.innerHTML += `<option value="${t.id}">${t.nombre}</option>`;
     });
   }
 
   // 🔹 Guardar evento
-  document.getElementById("formEvento").addEventListener("submit", async (e) => {
-    e.preventDefault();
+  document.getElementById("btnGuardar").addEventListener("click", async () => {
 
     const tramoId = document.getElementById("tramo").value;
     const tipoId = document.getElementById("tipo_evento").value;
@@ -86,14 +79,14 @@
     const comentario = document.getElementById("comentario").value;
     const fotoFile = document.getElementById("foto").files[0];
 
-    if (!fotoFile) {
-      alert("Selecciona una imagen");
+    if (!tramoId || !tipoId || !lat || !lng || !fotoFile) {
+      alert("Completa todos los campos obligatorios");
       return;
     }
 
     const nombreArchivo = `${Date.now()}_${fotoFile.name}`;
 
-    // 📸 Subir imagen
+    // Subir imagen
     const { error: uploadError } = await supabaseClient
       .storage
       .from("fotos-eventos")
@@ -104,7 +97,6 @@
       return;
     }
 
-    // 🔗 Obtener URL pública
     const { data: publicUrlData } = supabaseClient
       .storage
       .from("fotos-eventos")
@@ -112,7 +104,7 @@
 
     const foto_url = publicUrlData.publicUrl;
 
-    // 🗄 Guardar registro
+    // Insertar evento
     const { error: insertError } = await supabaseClient
       .from("eventos")
       .insert([
@@ -136,6 +128,7 @@
   });
 
   cargarListas();
+
 </script>
 
 </body>
