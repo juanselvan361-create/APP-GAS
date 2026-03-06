@@ -153,7 +153,47 @@ alert("No se pudo obtener la ubicación")
 
 
 // GUARDAR OFFLINE
-function guardarOffline(evento){
+document.getElementById("btnGuardar").addEventListener("click",async()=>{
+
+const tramoId=document.getElementById("tramo").value
+const tipoId=document.getElementById("tipo_evento").value
+const lat=parseFloat(document.getElementById("latitud").value)
+const lng=parseFloat(document.getElementById("longitud").value)
+const comentario=document.getElementById("comentario").value
+const fotoFile=document.getElementById("foto").files[0]
+
+if(!tramoId||!tipoId||!lat||!lng||!fotoFile){
+alert("Completa todos los campos")
+return
+}
+
+document.getElementById("btnGuardar").innerText="Guardando..."
+
+let fotoBase64=null
+
+// SI NO HAY INTERNET
+if(!navigator.onLine){
+
+fotoBase64=await convertirFotoBase64(fotoFile)
+
+const evento={
+
+tramo_id:tramoId,
+tipo_evento_id:tipoId,
+latitud:lat,
+longitud:lng,
+comentario,
+foto_base64:fotoBase64
+
+}
+
+guardarOffline(evento)
+
+document.getElementById("btnGuardar").innerText="Guardar Evento"
+
+return
+
+}{
 
 let eventosOffline = JSON.parse(localStorage.getItem("eventosOffline")) || []
 
