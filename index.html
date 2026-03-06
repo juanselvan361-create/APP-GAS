@@ -136,33 +136,69 @@ alert("No se pudo obtener la ubicación")
 })
 
 
+// 🔹 GUARDAR EVENTO OFFLINE
+function guardarOffline(evento){
+
+let eventosOffline = JSON.parse(localStorage.getItem("eventosOffline")) || []
+
+eventosOffline.push(evento)
+
+localStorage.setItem("eventosOffline",JSON.stringify(eventosOffline))
+
+alert("📴 Evento guardado en el celular (sin internet)")
+
+}
+
+
+// 🔹 SINCRONIZAR EVENTOS
+async function sincronizarEventos(){
+
+let eventosOffline = JSON.parse(localStorage.getItem("eventosOffline"))
+
+if(!eventosOffline || eventosOffline.length===0){
+return
+}
+
+for(let evento of eventosOffline){
+
+await supabaseClient
+.from("eventos")
+.insert([evento])
+
+}
+
+localStorage.removeItem("eventosOffline")
+
+alert("☁ Eventos offline sincronizados")
+
+}
+
+
+// 🔹 DETECTAR CUANDO VUELVE INTERNET
+window.addEventListener("online",()=>{
+
+sincronizarEventos()
+
+})
+
+
 // 🔹 CARGAR LISTAS
 async function cargarListas(){
 
 const selectTramo=document.getElementById("tramo")
 const selectTipo=document.getElementById("tipo_evento")
 
-const {data:tramos,error:errTramos}=await supabaseClient
+const {data:tramos}=await supabaseClient
 .from("tramos")
 .select("id,nombre")
-
-if(errTramos){
-console.log(errTramos)
-return
-}
 
 tramos.forEach(t=>{
 selectTramo.innerHTML+=`<option value="${t.id}">${t.nombre}</option>`
 })
 
-const {data:tipos,error:errTipos}=await supabaseClient
+const {data:tipos}=await supabaseClient
 .from("tipo_evento")
 .select("id,nombre")
-
-if(errTipos){
-console.log(errTipos)
-return
-}
 
 tipos.forEach(t=>{
 selectTipo.innerHTML+=`<option value="${t.id}">${t.nombre}</option>`
@@ -211,24 +247,45 @@ const {data:publicUrlData}=supabaseClient
 const foto_url=publicUrlData.publicUrl
 
 
-// INSERTAR EVENTO
-const {error:insertError}=await supabaseClient
-.from("eventos")
-.insert([{
+const evento={
+
 tramo_id:tramoId,
 tipo_evento_id:tipoId,
 latitud:lat,
 longitud:lng,
 comentario,
 foto_url
-}])
+
+}
+
+
+// SI NO HAY INTERNET
+if(!navigator.onLine){
+
+guardarOffline(evento)
+
+document.getElementById("btnGuardar").innerText="Guardar Evento"
+
+return
+}
+
+
+// INSERTAR EVENTO
+const {error:insertError}=await supabaseClient
+.from("eventos")
+.insert([evento])
 
 
 if(insertError){
-alert("Error guardando evento")
+
+guardarOffline(evento)
+
 }else{
+
 alert("Evento guardado correctamente 📍")
+
 document.getElementById("formEvento").reset()
+
 }
 
 document.getElementById("btnGuardar").innerText="Guardar Evento"
