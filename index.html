@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a4fa3">
 <meta charset="UTF-8"/>
@@ -73,6 +75,7 @@ background:#166b2d;
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 </head>
 
 <body>
@@ -112,7 +115,7 @@ background:#166b2d;
 <script>
 
 const SUPABASE_URL="https://yecwroaomwrtndqtwjvl.supabase.co"
-const SUPABASE_KEY="sb_publishable_ccG_ne0F5dU_J7qZKSgOhw_r0DLhRXk"
+const SUPABASE_KEY="TU_PUBLIC_KEY"
 
 const {createClient}=supabase
 const supabaseClient=createClient(SUPABASE_URL,SUPABASE_KEY)
@@ -138,7 +141,7 @@ alert("No se pudo obtener la ubicación")
 })
 
 
-// 🔹 GUARDAR EVENTO OFFLINE
+// GUARDAR EVENTO OFFLINE
 function guardarOffline(evento){
 
 let eventosOffline = JSON.parse(localStorage.getItem("eventosOffline")) || []
@@ -147,12 +150,12 @@ eventosOffline.push(evento)
 
 localStorage.setItem("eventosOffline",JSON.stringify(eventosOffline))
 
-alert("📴 Evento guardado en el celular (sin internet)")
+alert("📴 Evento guardado sin internet")
 
 }
 
 
-// 🔹 SINCRONIZAR EVENTOS
+// SINCRONIZAR EVENTOS
 async function sincronizarEventos(){
 
 let eventosOffline = JSON.parse(localStorage.getItem("eventosOffline"))
@@ -171,12 +174,12 @@ await supabaseClient
 
 localStorage.removeItem("eventosOffline")
 
-alert("☁ Eventos offline sincronizados")
+alert("☁ Eventos sincronizados")
 
 }
 
 
-// 🔹 DETECTAR CUANDO VUELVE INTERNET
+// DETECTAR CUANDO REGRESA INTERNET
 window.addEventListener("online",()=>{
 
 sincronizarEventos()
@@ -184,7 +187,7 @@ sincronizarEventos()
 })
 
 
-// 🔹 CARGAR LISTAS
+// CARGAR LISTAS
 async function cargarListas(){
 
 const selectTramo=document.getElementById("tramo")
@@ -209,7 +212,7 @@ selectTipo.innerHTML+=`<option value="${t.id}">${t.nombre}</option>`
 }
 
 
-// 💾 GUARDAR EVENTO
+// GUARDAR EVENTO
 document.getElementById("btnGuardar").addEventListener("click",async()=>{
 
 const tramoId=document.getElementById("tramo").value
@@ -220,7 +223,7 @@ const comentario=document.getElementById("comentario").value
 const fotoFile=document.getElementById("foto").files[0]
 
 if(!tramoId||!tipoId||!lat||!lng||!fotoFile){
-alert("Completa todos los campos obligatorios")
+alert("Completa todos los campos")
 return
 }
 
@@ -269,6 +272,7 @@ guardarOffline(evento)
 document.getElementById("btnGuardar").innerText="Guardar Evento"
 
 return
+
 }
 
 
@@ -294,12 +298,12 @@ document.getElementById("btnGuardar").innerText="Guardar Evento"
 
 })
 
+
+// CARGAR LISTAS AL INICIO
 cargarListas()
 
-</script>
 
-</body>
-</html>
+// REGISTRAR SERVICE WORKER
 if("serviceWorker" in navigator){
 
 navigator.serviceWorker.register("service-worker.js")
@@ -308,3 +312,9 @@ console.log("Service Worker registrado")
 })
 
 }
+
+</script>
+
+</body>
+
+</html>
