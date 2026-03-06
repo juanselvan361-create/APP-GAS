@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registro de Eventos - Supabase</title>
-  <style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Registro de Eventos - Supabase</title>
+
+<style>
 
 body{
 font-family: Arial, sans-serif;
@@ -32,7 +34,6 @@ display:block;
 }
 
 input, select, textarea{
-
 width:100%;
 padding:12px;
 margin-top:5px;
@@ -40,11 +41,9 @@ margin-bottom:10px;
 font-size:16px;
 border-radius:6px;
 border:1px solid #ccc;
-
 }
 
 button{
-
 width:100%;
 padding:14px;
 font-size:18px;
@@ -53,139 +52,190 @@ color:white;
 border:none;
 border-radius:6px;
 font-weight:bold;
-
+cursor:pointer;
 }
 
 button:hover{
 background:#083a7a;
 }
 
+#btnGPS{
+background:#1e8e3e;
+margin-bottom:10px;
+}
+
+#btnGPS:hover{
+background:#166b2d;
+}
+
 </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
 
 <h2>Registro de Evento</h2>
 
 <form id="formEvento">
 
-  <label>Tramo:</label><br>
-  <select id="tramo" required>
-    <option value="">Seleccione un tramo</option>
-  </select><br><br>
+<label>Tramo</label>
+<select id="tramo" required>
+<option value="">Seleccione un tramo</option>
+</select>
 
-  <label>Tipo de Evento:</label><br>
-  <select id="tipo_evento" required>
-    <option value="">Seleccione tipo de evento</option>
-  </select><br><br>
+<label>Tipo de Evento</label>
+<select id="tipo_evento" required>
+<option value="">Seleccione tipo de evento</option>
+</select>
 
-  <label>Latitud:</label><br>
-  <input type="number" step="any" id="latitud" required><br><br>
+<label>Latitud</label>
+<input type="number" step="any" id="latitud" required>
 
-  <label>Longitud:</label><br>
-  <input type="number" step="any" id="longitud" required><br><br>
+<label>Longitud</label>
+<input type="number" step="any" id="longitud" required>
 
-  <label>Comentario:</label><br>
-  <textarea id="comentario"></textarea><br><br>
+<button type="button" id="btnGPS">📍 Obtener GPS</button>
 
-  <label>Foto:</label><br>
-  <input type="file" id="foto" accept="image/*" required><br><br>
+<label>Comentario</label>
+<textarea id="comentario"></textarea>
 
-  <button type="button" id="btnGuardar">Guardar Evento</button>
+<label>Foto</label>
+<input type="file" id="foto" accept="image/*" required>
+
+<button type="button" id="btnGuardar">Guardar Evento</button>
 
 </form>
 
 <script>
 
-  const SUPABASE_URL = "https://yecwroaomwrtndqtwjvl.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_ccG_ne0F5dU_J7qZKSgOhw_r0DLhRXk";
+const SUPABASE_URL="https://yecwroaomwrtndqtwjvl.supabase.co"
+const SUPABASE_KEY="sb_publishable_ccG_ne0F5dU_J7qZKSgOhw_r0DLhRXk"
 
-  const { createClient } = supabase;
-  const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+const {createClient}=supabase
+const supabaseClient=createClient(SUPABASE_URL,SUPABASE_KEY)
 
-  // 🔹 Cargar listas
-  async function cargarListas() {
 
-    const selectTramo = document.getElementById("tramo");
-    const selectTipo = document.getElementById("tipo_evento");
+// 📍 BOTÓN GPS
+document.getElementById("btnGPS").addEventListener("click",()=>{
 
-    selectTramo.innerHTML = '<option value="">Seleccione un tramo</option>';
-    selectTipo.innerHTML = '<option value="">Seleccione tipo de evento</option>';
+if(!navigator.geolocation){
+alert("GPS no soportado")
+return
+}
 
-    const { data: tramos } =
-      await supabaseClient.from("tramos").select("id,nombre");
+navigator.geolocation.getCurrentPosition(pos=>{
 
-    tramos.forEach(t => {
-      selectTramo.innerHTML += `<option value="${t.id}">${t.nombre}</option>`;
-    });
+document.getElementById("latitud").value=pos.coords.latitude
+document.getElementById("longitud").value=pos.coords.longitude
 
-    const { data: tipos } =
-      await supabaseClient.from("tipo_evento").select("id,nombre");
+},err=>{
+alert("No se pudo obtener la ubicación")
+})
 
-    tipos.forEach(t => {
-      selectTipo.innerHTML += `<option value="${t.id}">${t.nombre}</option>`;
-    });
-  }
+})
 
-  // 🔹 Guardar evento
-  document.getElementById("btnGuardar").addEventListener("click", async () => {
 
-    const tramoId = document.getElementById("tramo").value;
-    const tipoId = document.getElementById("tipo_evento").value;
-    const lat = parseFloat(document.getElementById("latitud").value);
-    const lng = parseFloat(document.getElementById("longitud").value);
-    const comentario = document.getElementById("comentario").value;
-    const fotoFile = document.getElementById("foto").files[0];
+// 🔹 CARGAR LISTAS
+async function cargarListas(){
 
-    if (!tramoId || !tipoId || !lat || !lng || !fotoFile) {
-      alert("Completa todos los campos obligatorios");
-      return;
-    }
+const selectTramo=document.getElementById("tramo")
+const selectTipo=document.getElementById("tipo_evento")
 
-    const nombreArchivo = `${Date.now()}_${fotoFile.name}`;
+const {data:tramos,error:errTramos}=await supabaseClient
+.from("tramos")
+.select("id,nombre")
 
-    // Subir imagen
-    const { error: uploadError } = await supabaseClient
-      .storage
-      .from("fotos-eventos")
-      .upload(nombreArchivo, fotoFile);
+if(errTramos){
+console.log(errTramos)
+return
+}
 
-    if (uploadError) {
-      alert("Error al subir la foto: " + uploadError.message);
-      return;
-    }
+tramos.forEach(t=>{
+selectTramo.innerHTML+=`<option value="${t.id}">${t.nombre}</option>`
+})
 
-    const { data: publicUrlData } = supabaseClient
-      .storage
-      .from("fotos-eventos")
-      .getPublicUrl(nombreArchivo);
+const {data:tipos,error:errTipos}=await supabaseClient
+.from("tipo_evento")
+.select("id,nombre")
 
-    const foto_url = publicUrlData.publicUrl;
+if(errTipos){
+console.log(errTipos)
+return
+}
 
-    // Insertar evento
-    const { error: insertError } = await supabaseClient
-      .from("eventos")
-      .insert([
-        {
-          tramo_id: tramoId,
-          tipo_evento_id: tipoId,
-          latitud: lat,
-          longitud: lng,
-          comentario,
-          foto_url
-        }
-      ]);
+tipos.forEach(t=>{
+selectTipo.innerHTML+=`<option value="${t.id}">${t.nombre}</option>`
+})
 
-    if (insertError) {
-      alert("Error guardando evento: " + insertError.message);
-    } else {
-      alert("Evento guardado exitosamente 📌");
-      document.getElementById("formEvento").reset();
-    }
+}
 
-  });
 
-  cargarListas();
+// 💾 GUARDAR EVENTO
+document.getElementById("btnGuardar").addEventListener("click",async()=>{
+
+const tramoId=document.getElementById("tramo").value
+const tipoId=document.getElementById("tipo_evento").value
+const lat=parseFloat(document.getElementById("latitud").value)
+const lng=parseFloat(document.getElementById("longitud").value)
+const comentario=document.getElementById("comentario").value
+const fotoFile=document.getElementById("foto").files[0]
+
+if(!tramoId||!tipoId||!lat||!lng||!fotoFile){
+alert("Completa todos los campos obligatorios")
+return
+}
+
+document.getElementById("btnGuardar").innerText="Guardando..."
+
+const nombreArchivo=`${Date.now()}_${fotoFile.name}`
+
+
+// SUBIR FOTO
+const {error:uploadError}=await supabaseClient
+.storage
+.from("fotos-eventos")
+.upload(nombreArchivo,fotoFile)
+
+if(uploadError){
+alert("Error al subir foto")
+document.getElementById("btnGuardar").innerText="Guardar Evento"
+return
+}
+
+const {data:publicUrlData}=supabaseClient
+.storage
+.from("fotos-eventos")
+.getPublicUrl(nombreArchivo)
+
+const foto_url=publicUrlData.publicUrl
+
+
+// INSERTAR EVENTO
+const {error:insertError}=await supabaseClient
+.from("eventos")
+.insert([{
+tramo_id:tramoId,
+tipo_evento_id:tipoId,
+latitud:lat,
+longitud:lng,
+comentario,
+foto_url
+}])
+
+
+if(insertError){
+alert("Error guardando evento")
+}else{
+alert("Evento guardado correctamente 📍")
+document.getElementById("formEvento").reset()
+}
+
+document.getElementById("btnGuardar").innerText="Guardar Evento"
+
+})
+
+cargarListas()
 
 </script>
 
