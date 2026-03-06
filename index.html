@@ -72,6 +72,12 @@ margin-bottom:10px;
 background:#166b2d;
 }
 
+#btnInstalar{
+background:#ff9800;
+margin-top:10px;
+display:none;
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -110,6 +116,10 @@ background:#166b2d;
 
 <button type="button" id="btnGuardar">Guardar Evento</button>
 
+<button type="button" id="btnInstalar">
+📲 Instalar App
+</button>
+
 </form>
 
 <script>
@@ -121,7 +131,7 @@ const {createClient}=supabase
 const supabaseClient=createClient(SUPABASE_URL,SUPABASE_KEY)
 
 
-// 📍 BOTÓN GPS
+// GPS
 document.getElementById("btnGPS").addEventListener("click",()=>{
 
 if(!navigator.geolocation){
@@ -141,7 +151,7 @@ alert("No se pudo obtener la ubicación")
 })
 
 
-// GUARDAR EVENTO OFFLINE
+// GUARDAR OFFLINE
 function guardarOffline(evento){
 
 let eventosOffline = JSON.parse(localStorage.getItem("eventosOffline")) || []
@@ -155,7 +165,7 @@ alert("📴 Evento guardado sin internet")
 }
 
 
-// SINCRONIZAR EVENTOS
+// SINCRONIZAR
 async function sincronizarEventos(){
 
 let eventosOffline = JSON.parse(localStorage.getItem("eventosOffline"))
@@ -179,7 +189,7 @@ alert("☁ Eventos sincronizados")
 }
 
 
-// DETECTAR CUANDO REGRESA INTERNET
+// DETECTAR INTERNET
 window.addEventListener("online",()=>{
 
 sincronizarEventos()
@@ -264,7 +274,7 @@ foto_url
 }
 
 
-// SI NO HAY INTERNET
+// SIN INTERNET
 if(!navigator.onLine){
 
 guardarOffline(evento)
@@ -276,7 +286,7 @@ return
 }
 
 
-// INSERTAR EVENTO
+// INSERTAR
 const {error:insertError}=await supabaseClient
 .from("eventos")
 .insert([evento])
@@ -299,18 +309,51 @@ document.getElementById("btnGuardar").innerText="Guardar Evento"
 })
 
 
-// CARGAR LISTAS AL INICIO
+// CARGAR LISTAS
 cargarListas()
 
 
-// REGISTRAR SERVICE WORKER
+// SERVICE WORKER
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js")
-  .then(() => console.log("Service Worker registrado"));
+navigator.serviceWorker.register("service-worker.js")
+.then(()=>console.log("Service Worker registrado"))
 }
+
+
+// BOTON INSTALAR APP
+let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt",(e)=>{
+
+e.preventDefault()
+
+deferredPrompt=e
+
+document.getElementById("btnInstalar").style.display="block"
+
+})
+
+
+document.getElementById("btnInstalar").addEventListener("click",async()=>{
+
+if(!deferredPrompt){
+alert("La app aún no está lista para instalar")
+return
+}
+
+deferredPrompt.prompt()
+
+const {outcome}=await deferredPrompt.userChoice
+
+if(outcome==="accepted"){
+console.log("App instalada")
+}
+
+deferredPrompt=null
+
+})
 
 </script>
 
 </body>
-
 </html>
