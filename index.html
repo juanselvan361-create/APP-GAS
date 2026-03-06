@@ -211,15 +211,51 @@ async function sincronizarEventos(){
 
 let eventosOffline = JSON.parse(localStorage.getItem("eventosOffline"))
 
-if(!eventosOffline || eventososOffline?.length===0){
+if(!eventosOffline || eventosOffline.length===0){
 return
 }
 
 for(let evento of eventosOffline){
 
+let foto_url=null
+
+// SUBIR FOTO
+if(evento.foto_base64){
+
+const blob=await fetch(evento.foto_base64).then(r=>r.blob())
+
+const nombreArchivo=`${Date.now()}.jpg`
+
+const {error}=await supabaseClient
+.storage
+.from("fotos-eventos")
+.upload(nombreArchivo,blob)
+
+if(!error){
+
+const {data}=supabaseClient
+.storage
+.from("fotos-eventos")
+.getPublicUrl(nombreArchivo)
+
+foto_url=data.publicUrl
+
+}
+
+}
+
 await supabaseClient
 .from("eventos")
-.insert([evento])
+.insert([{
+
+tramo_id:evento.tramo_id,
+tipo_evento_id:evento.tipo_evento_id,
+latitud:evento.latitud,
+longitud:evento.longitud,
+comentario:evento.comentario,
+foto_url:foto_url
+
+}])
 
 }
 
@@ -228,7 +264,6 @@ localStorage.removeItem("eventosOffline")
 alert("☁ Eventos sincronizados")
 
 }
-
 
 // DETECTAR INTERNET
 window.addEventListener("online",()=>{
