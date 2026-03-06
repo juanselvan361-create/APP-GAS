@@ -1,3 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a4fa3">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Registro de Eventos - Supabase</title>
+
+<style>
+
+body{
+font-family: Arial, sans-serif;
+background:#f2f4f7;
+padding:15px;
+}
+
+h2{
+text-align:center;
+}
+
+form{
+background:white;
+padding:20px;
+border-radius:10px;
+max-width:500px;
+margin:auto;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+label{
+font-weight:bold;
+margin-top:10px;
+display:block;
+}
+
+input, select, textarea{
+width:100%;
+padding:12px;
+margin-top:5px;
+margin-bottom:10px;
+font-size:16px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+button{
+width:100%;
+padding:14px;
+font-size:18px;
+background:#0a4fa3;
+color:white;
+border:none;
+border-radius:6px;
+font-weight:bold;
+cursor:pointer;
+}
+
+#btnGPS{
+background:#1e8e3e;
+margin-bottom:10px;
+}
+
+#btnInstalar{
+background:#ff9800;
+margin-top:10px;
+display:none;
+}
+
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+</head>
+
+<body>
+
+<h2>Registro de Evento</h2>
+
+<form id="formEvento">
+
+<label>Tramo</label>
+<select id="tramo" required>
+<option value="">Seleccione un tramo</option>
+</select>
+
+<label>Tipo de Evento</label>
+<select id="tipo_evento" required>
+<option value="">Seleccione tipo de evento</option>
+</select>
+
+<label>Latitud</label>
+<input type="number" step="any" id="latitud" required>
+
+<label>Longitud</label>
+<input type="number" step="any" id="longitud" required>
+
+<button type="button" id="btnGPS">📍 Obtener GPS</button>
+
+<label>Comentario</label>
+<textarea id="comentario"></textarea>
+
+<label>Foto</label>
+<input type="file" id="foto" accept="image/*" required>
+
+<button type="button" id="btnGuardar">Guardar Evento</button>
+
+<button type="button" id="btnInstalar">
+📲 Instalar App
+</button>
+
+</form>
+
 <script>
 
 // SUPABASE
@@ -8,7 +124,7 @@ const {createClient}=supabase
 const supabaseClient=createClient(SUPABASE_URL,SUPABASE_KEY)
 
 
-// CONVERTIR FOTO A BASE64
+// CONVERTIR FOTO BASE64
 function convertirFotoBase64(file){
 
 return new Promise((resolve,reject)=>{
@@ -26,10 +142,10 @@ reader.onerror=error=>reject(error)
 }
 
 
-// GUARDAR OFFLINE
+// GUARDAR EVENTO OFFLINE
 function guardarOffline(evento){
 
-let eventosOffline = JSON.parse(localStorage.getItem("eventosOffline")) || []
+let eventosOffline=JSON.parse(localStorage.getItem("eventosOffline")) || []
 
 eventosOffline.push(evento)
 
@@ -43,17 +159,14 @@ alert("📴 Evento guardado sin internet")
 // SINCRONIZAR EVENTOS
 async function sincronizarEventos(){
 
-let eventosOffline = JSON.parse(localStorage.getItem("eventosOffline"))
+let eventosOffline=JSON.parse(localStorage.getItem("eventosOffline"))
 
-if(!eventosOffline || eventosOffline.length===0){
-return
-}
+if(!eventosOffline) return
 
 for(let evento of eventosOffline){
 
 let foto_url=null
 
-// SUBIR FOTO
 if(evento.foto_base64){
 
 const blob=await fetch(evento.foto_base64).then(r=>r.blob())
@@ -78,7 +191,6 @@ foto_url=data.publicUrl
 
 }
 
-// INSERTAR EVENTO
 await supabaseClient
 .from("eventos")
 .insert([{
@@ -101,7 +213,7 @@ alert("☁ Eventos sincronizados")
 }
 
 
-// DETECTAR CUANDO REGRESA INTERNET
+// CUANDO REGRESA INTERNET
 window.addEventListener("online",()=>{
 
 sincronizarEventos()
@@ -111,11 +223,6 @@ sincronizarEventos()
 
 // GPS
 document.getElementById("btnGPS").addEventListener("click",()=>{
-
-if(!navigator.geolocation){
-alert("GPS no soportado")
-return
-}
 
 navigator.geolocation.getCurrentPosition(pos=>{
 
@@ -130,89 +237,80 @@ document.getElementById("longitud").value=pos.coords.longitude
 // GUARDAR EVENTO
 document.getElementById("btnGuardar").addEventListener("click",async()=>{
 
-const tramoId=document.getElementById("tramo").value
-const tipoId=document.getElementById("tipo_evento").value
-const lat=parseFloat(document.getElementById("latitud").value)
-const lng=parseFloat(document.getElementById("longitud").value)
+const tramo=document.getElementById("tramo").value
+const tipo=document.getElementById("tipo_evento").value
+const lat=document.getElementById("latitud").value
+const lng=document.getElementById("longitud").value
 const comentario=document.getElementById("comentario").value
-const fotoFile=document.getElementById("foto").files[0]
+const foto=document.getElementById("foto").files[0]
 
-if(!tramoId||!tipoId||!lat||!lng||!fotoFile){
+if(!tramo||!tipo||!lat||!lng||!foto){
+
 alert("Completa todos los campos")
+
 return
+
 }
 
-document.getElementById("btnGuardar").innerText="Guardando..."
 
-
-// SI NO HAY INTERNET
+// SIN INTERNET
 if(!navigator.onLine){
 
-const fotoBase64=await convertirFotoBase64(fotoFile)
+const fotoBase64=await convertirFotoBase64(foto)
 
-const evento={
+guardarOffline({
 
-tramo_id:tramoId,
-tipo_evento_id:tipoId,
+tramo_id:tramo,
+tipo_evento_id:tipo,
 latitud:lat,
 longitud:lng,
 comentario,
 foto_base64:fotoBase64
 
-}
-
-guardarOffline(evento)
-
-document.getElementById("btnGuardar").innerText="Guardar Evento"
+})
 
 return
 
 }
 
 
-// SI HAY INTERNET
-const nombreArchivo=`${Date.now()}_${fotoFile.name}`
+// CON INTERNET
+const nombreArchivo=`${Date.now()}_${foto.name}`
 
-const {error:uploadError}=await supabaseClient
+const {error}=await supabaseClient
 .storage
 .from("fotos-eventos")
-.upload(nombreArchivo,fotoFile)
+.upload(nombreArchivo,foto)
 
-if(uploadError){
+if(error){
 
-alert("Error al subir foto")
-document.getElementById("btnGuardar").innerText="Guardar Evento"
+alert("Error subiendo foto")
+
 return
 
 }
 
-const {data:publicUrlData}=supabaseClient
+const {data}=supabaseClient
 .storage
 .from("fotos-eventos")
 .getPublicUrl(nombreArchivo)
-
-const foto_url=publicUrlData.publicUrl
-
 
 await supabaseClient
 .from("eventos")
 .insert([{
 
-tramo_id:tramoId,
-tipo_evento_id:tipoId,
+tramo_id:tramo,
+tipo_evento_id:tipo,
 latitud:lat,
 longitud:lng,
 comentario,
-foto_url
+foto_url:data.publicUrl
 
 }])
 
-
-alert("Evento guardado correctamente 📍")
+alert("Evento guardado 📍")
 
 document.getElementById("formEvento").reset()
-
-document.getElementById("btnGuardar").innerText="Guardar Evento"
 
 })
 
@@ -220,23 +318,19 @@ document.getElementById("btnGuardar").innerText="Guardar Evento"
 // CARGAR LISTAS
 async function cargarListas(){
 
-const selectTramo=document.getElementById("tramo")
-const selectTipo=document.getElementById("tipo_evento")
-
-const {data:tramos}=await supabaseClient
-.from("tramos")
-.select("id,nombre")
+const {data:tramos}=await supabaseClient.from("tramos").select("id,nombre")
+const {data:tipos}=await supabaseClient.from("tipo_evento").select("id,nombre")
 
 tramos.forEach(t=>{
-selectTramo.innerHTML+=`<option value="${t.id}">${t.nombre}</option>`
+
+document.getElementById("tramo").innerHTML+=`<option value="${t.id}">${t.nombre}</option>`
+
 })
 
-const {data:tipos}=await supabaseClient
-.from("tipo_evento")
-.select("id,nombre")
-
 tipos.forEach(t=>{
-selectTipo.innerHTML+=`<option value="${t.id}">${t.nombre}</option>`
+
+document.getElementById("tipo_evento").innerHTML+=`<option value="${t.id}">${t.nombre}</option>`
+
 })
 
 }
@@ -245,19 +339,14 @@ cargarListas()
 
 
 // SERVICE WORKER
-if ("serviceWorker" in navigator) {
+if("serviceWorker" in navigator){
 
-window.addEventListener("load", () => {
-
-navigator.serviceWorker.register("./service-worker.js")
-.then(()=>console.log("Service Worker registrado"))
-
-})
+navigator.serviceWorker.register("service-worker.js")
 
 }
 
 
-// BOTON INSTALAR APP
+// BOTON INSTALAR
 let deferredPrompt
 
 window.addEventListener("beforeinstallprompt",(e)=>{
@@ -274,7 +363,7 @@ document.getElementById("btnInstalar").addEventListener("click",async()=>{
 
 if(!deferredPrompt){
 
-alert("La app aún no está lista para instalar")
+alert("Instalación no disponible")
 
 return
 
@@ -289,3 +378,6 @@ deferredPrompt=null
 })
 
 </script>
+
+</body>
+</html>
