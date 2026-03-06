@@ -329,38 +329,40 @@ if ("serviceWorker" in navigator) {
   
 </script>
 
+<script>
+
 // BOTON INSTALAR APP
 let deferredPrompt;
 
-window.addEventListener("beforeinstallprompt",(e)=>{
+window.addEventListener("beforeinstallprompt", (e) => {
 
-e.preventDefault()
+  e.preventDefault();
+  deferredPrompt = e;
 
-deferredPrompt=e
+  document.getElementById("btnInstalar").style.display = "block";
 
-document.getElementById("btnInstalar").style.display="block"
+});
 
-})
+document.getElementById("btnInstalar").addEventListener("click", async () => {
 
+  if (!deferredPrompt) {
 
-document.getElementById("btnInstalar").addEventListener("click",async()=>{
+    alert("La app aún no está lista para instalar");
+    return;
 
-if(!deferredPrompt){
-alert("La app aún no está lista para instalar")
-return
-}
+  }
 
-deferredPrompt.prompt()
+  deferredPrompt.prompt();
 
-const {outcome}=await deferredPrompt.userChoice
+  const { outcome } = await deferredPrompt.userChoice;
 
-if(outcome==="accepted"){
-console.log("App instalada")
-}
+  if (outcome === "accepted") {
+    console.log("App instalada");
+  }
 
-deferredPrompt=null
+  deferredPrompt = null;
 
-})
+});
 
 </script>
 
