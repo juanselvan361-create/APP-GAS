@@ -1,7 +1,7 @@
 {
 "name":"Registro de Eventos",
 "short_name":"Eventos",
-"start_url":"./index.html",
+"start_url":"index.html",
 "display":"standalone",
 "background_color":"#ffffff",
 "theme_color":"#0a4fa3",
