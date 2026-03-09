@@ -48,3 +48,42 @@ return response || fetch(event.request)
 )
 
 })
+window.addEventListener("load",()=>{
+
+if(!navigator.geolocation){
+
+alert("Tu dispositivo no soporta GPS")
+
+return
+
+}
+
+navigator.geolocation.getCurrentPosition(
+
+(pos)=>{
+
+const lat=pos.coords.latitude
+const lon=pos.coords.longitude
+
+document.getElementById("latitud").value=lat
+document.getElementById("longitud").value=lon
+
+console.log("GPS obtenido:",lat,lon)
+
+},
+
+(err)=>{
+
+alert("No se pudo obtener GPS: "+err.message)
+
+},
+
+{
+enableHighAccuracy:true,
+timeout:15000,
+maximumAge:0
+}
+
+)
+
+})
